@@ -3,7 +3,7 @@ import type * as ort from 'onnxruntime-web/webgpu';
 export type OrtModule = typeof ort;
 
 export type RuntimeMode = {
-  id: 'official-bucket' | 'patched-simple';
+  id: 'official-bucket' | 'patched-simple' | 'patched-disabled';
   title: string;
   shortTitle: string;
   description: string;
@@ -50,6 +50,15 @@ export const runtimeModes: RuntimeMode[] = [
     description:
       'Uses the same ort.webgpu.min.mjs bundle with JS forwarding patched in, then requests exact-size storage buffer reuse.',
     providerOptions: { name: 'webgpu', storageBufferCacheMode: 'simple' },
+    load: () => loadPublicOrt('ort-patched', 'storage-cache-mode'),
+  },
+  {
+    id: 'patched-disabled',
+    title: 'Patched onnxruntime-web 1.26.0, storageBufferCacheMode disabled',
+    shortTitle: 'Patched disabled',
+    description:
+      'Uses the patched ort.webgpu.min.mjs bundle, then disables storage buffer reuse.',
+    providerOptions: { name: 'webgpu', storageBufferCacheMode: 'disabled' },
     load: () => loadPublicOrt('ort-patched', 'storage-cache-mode'),
   },
 ];

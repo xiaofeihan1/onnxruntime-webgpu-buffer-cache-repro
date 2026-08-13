@@ -5,7 +5,7 @@ C++ core, but `onnxruntime-web` does not forward the option from JS, so web
 apps are pinned to the default `bucket` mode. For static-shape models the
 bucket rounding is expensive. This page makes the cost visible.
 
-Live demo: <https://musetric.github.io/onnxruntime-webgpu-buffer-cache-repro/>
+Live demo: <https://xiaofeihan1.github.io/onnxruntime-webgpu-buffer-cache-repro/>
 
 Upstream issue: <https://github.com/microsoft/onnxruntime/issues/29016>
 
@@ -19,8 +19,11 @@ It runs the same static-shape model twice per mode and compares:
   mode).
 - `Patched simple` — the same `ort.webgpu.min.mjs` with one line added to
   forward `storageBufferCacheMode`, then `storageBufferCacheMode: 'simple'`.
+- `Patched disabled` — the same patched bundle with
+  `storageBufferCacheMode: 'disabled'`, which disables storage-buffer reuse.
 
-The only difference between the modes is the forwarded option.
+The only difference between the patched modes is the value of the forwarded
+option.
 
 Model: [Musetric RoFormer vocal separation](https://huggingface.co/musetric/vocal-separation-roformer-onnx)
 (fp16 weights, fp32 I/O `stft_repr` / `masks: [1, 2050, 1101, 2]`, 741 MB).

@@ -14,7 +14,7 @@ type AppState = {
   logs: string[];
   results: ReproResult[];
   progress: DownloadProgress | null;
-  activeTab: 'log' | 'official' | 'patched';
+  activeTab: 'log' | 'official' | 'simple' | 'disabled';
   error: string | null;
 };
 
@@ -99,15 +99,14 @@ const getWeightsBytes = (result: ReproResult): number =>
 
 const renderSummaryRows = (): string => {
   const official = state.results.find((result) => result.mode.id === 'official-bucket');
-  const patched = state.results.find((result) => result.mode.id === 'patched-simple');
 
   return state.results
     .map((result) => {
       const run1Phase = result.trace.phases.find((item) => item.name === 'run 1');
       const run2Phase = result.trace.phases.find((item) => item.name === 'run 2');
       const peakDelta =
-        official && patched && result.mode.id === patched.mode.id
-          ? formatPercentDelta(official.trace.peakLiveBytes, patched.trace.peakLiveBytes)
+        official && result.mode.id !== official.mode.id
+          ? formatPercentDelta(official.trace.peakLiveBytes, result.trace.peakLiveBytes)
           : '';
 
       return `
@@ -155,20 +154,24 @@ const renderRunDetails = (result: ReproResult | undefined): string => {
 
 const renderTabs = (): string => {
   const official = state.results.find((result) => result.mode.id === 'official-bucket');
-  const patched = state.results.find((result) => result.mode.id === 'patched-simple');
+  const simple = state.results.find((result) => result.mode.id === 'patched-simple');
+  const disabled = state.results.find((result) => result.mode.id === 'patched-disabled');
   const content =
     state.activeTab === 'log'
       ? `<pre class="log">${state.logs.join('\n') || 'Idle.'}</pre>`
       : state.activeTab === 'official'
         ? renderRunDetails(official)
-        : renderRunDetails(patched);
+        : state.activeTab === 'simple'
+          ? renderRunDetails(simple)
+          : renderRunDetails(disabled);
 
   return `
     <section class="section tabs-panel">
       <div class="tabs" role="tablist" aria-label="Run details">
         <button class="tab ${state.activeTab === 'log' ? 'active' : ''}" data-tab="log" role="tab" aria-selected="${state.activeTab === 'log'}">Log</button>
         <button class="tab ${state.activeTab === 'official' ? 'active' : ''}" data-tab="official" role="tab" aria-selected="${state.activeTab === 'official'}">Bucket memory</button>
-        <button class="tab ${state.activeTab === 'patched' ? 'active' : ''}" data-tab="patched" role="tab" aria-selected="${state.activeTab === 'patched'}">Simple memory</button>
+        <button class="tab ${state.activeTab === 'simple' ? 'active' : ''}" data-tab="simple" role="tab" aria-selected="${state.activeTab === 'simple'}">Simple memory</button>
+        <button class="tab ${state.activeTab === 'disabled' ? 'active' : ''}" data-tab="disabled" role="tab" aria-selected="${state.activeTab === 'disabled'}">Disabled memory</button>
       </div>
       <div class="tab-content">
         ${content}
@@ -184,14 +187,14 @@ const render = (): void => {
         <div>
           <h1>WebGPU buffer cache repro</h1>
           <p class="lead">
-            Compare official ONNX Runtime WebGPU bucket cache against patched storageBufferCacheMode: simple.
+            Compare ONNX Runtime WebGPU storage buffer cache modes: bucket, simple, and disabled.
             <span class="metadata-line">
               Model:
               <a href="https://huggingface.co/musetric/vocal-separation-roformer-onnx" target="_blank" rel="noreferrer">Musetric RoFormer vocal separation</a>
             </span>
             <span class="metadata-line">
               Repository:
-              <a href="https://github.com/musetric/onnxruntime-webgpu-buffer-cache-repro" target="_blank" rel="noreferrer">musetric/onnxruntime-webgpu-buffer-cache-repro</a>
+              <a href="https://github.com/xiaofeihan1/onnxruntime-webgpu-buffer-cache-repro" target="_blank" rel="noreferrer">xiaofeihan1/onnxruntime-webgpu-buffer-cache-repro</a>
             </span>
             <span class="metadata-line">
               Upstream:
@@ -205,9 +208,10 @@ const render = (): void => {
 
       <section class="run-panel">
         <div class="actions">
-          <button ${state.running ? 'disabled' : ''} data-action="run-both">Run both</button>
+          <button ${state.running ? 'disabled' : ''} data-action="run-all">Run all</button>
           <button ${state.running ? 'disabled' : ''} data-action="run-official">Run bucket</button>
-          <button ${state.running ? 'disabled' : ''} data-action="run-patched">Run simple</button>
+          <button ${state.running ? 'disabled' : ''} data-action="run-simple">Run simple</button>
+          <button ${state.running ? 'disabled' : ''} data-action="run-disabled">Run disabled</button>
         </div>
         <div>
           ${renderProgress()}
@@ -248,7 +252,7 @@ const render = (): void => {
     </main>
   `;
 
-  app.querySelector('[data-action="run-both"]')?.addEventListener('click', () => {
+  app.querySelector('[data-action="run-all"]')?.addEventListener('click', () => {
     void runModes(runtimeModes);
   });
   app
@@ -257,9 +261,14 @@ const render = (): void => {
       void runModes([runtimeModes[0]]);
     });
   app
-    .querySelector('[data-action="run-patched"]')
+    .querySelector('[data-action="run-simple"]')
     ?.addEventListener('click', () => {
       void runModes([runtimeModes[1]]);
+    });
+  app
+    .querySelector('[data-action="run-disabled"]')
+    ?.addEventListener('click', () => {
+      void runModes([runtimeModes[2]]);
     });
   app.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((button) => {
     button.addEventListener('click', () => {
