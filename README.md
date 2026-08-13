@@ -19,11 +19,17 @@ It runs the same static-shape model twice per mode and compares:
   mode).
 - `Patched simple` — the same `ort.webgpu.min.mjs` with one line added to
   forward `storageBufferCacheMode`, then `storageBufferCacheMode: 'simple'`.
-- `Patched disabled` — the same patched bundle with
-  `storageBufferCacheMode: 'disabled'`, which disables storage-buffer reuse.
+- `Patched no cache` — the same patched bundle with
+  `storageBufferCacheMode: 'lazyRelease'`. It does not reuse storage buffers,
+  but delays destruction until pending WebGPU commands have been submitted.
 
 The only difference between the patched modes is the value of the forwarded
 option.
+
+The literal `disabled` value is not usable with deferred command submission in
+ONNX Runtime 1.26.0: it releases buffers immediately while commands that
+reference them can still be waiting for submission. `lazyRelease` provides the
+same no-cache behavior without destroying in-flight buffers.
 
 Model: [Musetric RoFormer vocal separation](https://huggingface.co/musetric/vocal-separation-roformer-onnx)
 (fp16 weights, fp32 I/O `stft_repr` / `masks: [1, 2050, 1101, 2]`, 741 MB).

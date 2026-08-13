@@ -14,7 +14,7 @@ type AppState = {
   logs: string[];
   results: ReproResult[];
   progress: DownloadProgress | null;
-  activeTab: 'log' | 'official' | 'simple' | 'disabled';
+  activeTab: 'log' | 'official' | 'simple' | 'no-cache';
   error: string | null;
 };
 
@@ -155,7 +155,7 @@ const renderRunDetails = (result: ReproResult | undefined): string => {
 const renderTabs = (): string => {
   const official = state.results.find((result) => result.mode.id === 'official-bucket');
   const simple = state.results.find((result) => result.mode.id === 'patched-simple');
-  const disabled = state.results.find((result) => result.mode.id === 'patched-disabled');
+  const noCache = state.results.find((result) => result.mode.id === 'patched-no-cache');
   const content =
     state.activeTab === 'log'
       ? `<pre class="log">${state.logs.join('\n') || 'Idle.'}</pre>`
@@ -163,7 +163,7 @@ const renderTabs = (): string => {
         ? renderRunDetails(official)
         : state.activeTab === 'simple'
           ? renderRunDetails(simple)
-          : renderRunDetails(disabled);
+          : renderRunDetails(noCache);
 
   return `
     <section class="section tabs-panel">
@@ -171,7 +171,7 @@ const renderTabs = (): string => {
         <button class="tab ${state.activeTab === 'log' ? 'active' : ''}" data-tab="log" role="tab" aria-selected="${state.activeTab === 'log'}">Log</button>
         <button class="tab ${state.activeTab === 'official' ? 'active' : ''}" data-tab="official" role="tab" aria-selected="${state.activeTab === 'official'}">Bucket memory</button>
         <button class="tab ${state.activeTab === 'simple' ? 'active' : ''}" data-tab="simple" role="tab" aria-selected="${state.activeTab === 'simple'}">Simple memory</button>
-        <button class="tab ${state.activeTab === 'disabled' ? 'active' : ''}" data-tab="disabled" role="tab" aria-selected="${state.activeTab === 'disabled'}">Disabled memory</button>
+        <button class="tab ${state.activeTab === 'no-cache' ? 'active' : ''}" data-tab="no-cache" role="tab" aria-selected="${state.activeTab === 'no-cache'}">No-cache memory</button>
       </div>
       <div class="tab-content">
         ${content}
@@ -187,7 +187,7 @@ const render = (): void => {
         <div>
           <h1>WebGPU buffer cache repro</h1>
           <p class="lead">
-            Compare ONNX Runtime WebGPU storage buffer cache modes: bucket, simple, and disabled.
+            Compare ONNX Runtime WebGPU storage buffer cache modes: bucket, simple, and no cache.
             <span class="metadata-line">
               Model:
               <a href="https://huggingface.co/musetric/vocal-separation-roformer-onnx" target="_blank" rel="noreferrer">Musetric RoFormer vocal separation</a>
@@ -211,7 +211,7 @@ const render = (): void => {
           <button ${state.running ? 'disabled' : ''} data-action="run-all">Run all</button>
           <button ${state.running ? 'disabled' : ''} data-action="run-official">Run bucket</button>
           <button ${state.running ? 'disabled' : ''} data-action="run-simple">Run simple</button>
-          <button ${state.running ? 'disabled' : ''} data-action="run-disabled">Run disabled</button>
+          <button ${state.running ? 'disabled' : ''} data-action="run-no-cache">Run no cache</button>
         </div>
         <div>
           ${renderProgress()}
@@ -266,7 +266,7 @@ const render = (): void => {
       void runModes([runtimeModes[1]]);
     });
   app
-    .querySelector('[data-action="run-disabled"]')
+    .querySelector('[data-action="run-no-cache"]')
     ?.addEventListener('click', () => {
       void runModes([runtimeModes[2]]);
     });
